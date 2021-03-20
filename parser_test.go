@@ -16,7 +16,7 @@ color`)
 func TestParser(t *testing.T) {
 	r := bytes.NewReader(testConf)
 	c := parseReader(r)
-	if c.Get("token") != "test" {
+	if c.GetString("token") != "test" {
 		fmt.Println("failed finding key value")
 		t.Fail()
 	}

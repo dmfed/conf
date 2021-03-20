@@ -10,15 +10,17 @@ import (
 )
 
 var (
-	configKeyValueRe = regexp.MustCompile(`(\w+) *= *(.+)\b[\t| |\n]*`)
-	configOptionRe   = regexp.MustCompile(`(\w+)`)
+	configKeyValueRe   = regexp.MustCompile(`(\w+) *= *(.+)\b[\t| |\n]*`)
+	configOptionRe     = regexp.MustCompile(`(\w+)`)
+	configCommentedOut = "#"
 )
 
+// Config holds values read from file or any other
 type Config struct {
 	Values map[string]string
 }
 
-func (c *Config) Get(key string) (s string) {
+func (c *Config) GetString(key string) (s string) {
 	if val, ok := c.Values[key]; ok {
 		s = val
 	}
@@ -40,14 +42,17 @@ func (c *Config) GetInt(key string) (n int) {
 	return
 }
 
-func Parse(filename string) (*Config, error) {
+func ParseFile(filename string) (*Config, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-	c := parseReader(file)
-	return c, nil
+	return parseReader(file), nil
+}
+
+func ParseReader(r io.Reader) *Config {
+	return parseReader(r)
 }
 
 func parseReader(r io.Reader) *Config {
@@ -56,7 +61,7 @@ func parseReader(r io.Reader) *Config {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "#") {
+		if strings.HasPrefix(line, configCommentedOut) {
 			continue
 		}
 		switch {
