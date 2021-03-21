@@ -2,6 +2,7 @@ package conf
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"os"
 	"regexp"
@@ -15,31 +16,48 @@ var (
 	configCommentedOut = "#"
 )
 
+var ErrNotFound = errors.New("no such key")
+
 // Config holds values read from file or any other
 type Config struct {
 	Values map[string]string
 }
 
-func (c *Config) GetString(key string) (s string) {
-	if val, ok := c.Values[key]; ok {
-		s = val
-	}
+func (c *Config) Get(key string) (op Option) {
+	op.Value, op.found = c.Values[key]
 	return
 }
 
-func (c *Config) GetBool(key string) (b bool) {
-	_, b = c.Values[key]
+func (c *Config) Has(key string) (present bool) {
+	_, present = c.Values[key]
 	return
 }
 
-func (c *Config) GetInt(key string) (n int) {
-	if val, ok := c.Values[key]; ok {
-		num, err := strconv.Atoi(val)
-		if err == nil {
-			n = num
-		}
+type Option struct {
+	Value string
+	found bool
+}
+
+func (op Option) Int() (int, error) {
+	switch op.found {
+	case true:
+		return strconv.Atoi(op.Value)
+	default:
+		return 0, ErrNotFound
 	}
-	return
+}
+
+func (op Option) String() (string, error) {
+	switch op.found {
+	case true:
+		return op.Value, nil
+	default:
+		return "", ErrNotFound
+	}
+}
+
+func (op Option) Bool() bool {
+	return op.found
 }
 
 func ParseFile(filename string) (*Config, error) {
