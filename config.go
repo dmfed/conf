@@ -47,17 +47,40 @@ type Config struct {
 }
 
 // Get returns a Setting. If key was not found the returned Setting's Value
-// will be empty string and Setting's Found field will be set to false
-func (c *Config) GetSetting(key string) (s Setting) {
-	s.Value, s.Found = c.Settings[key]
-	s.Key = key
+// will be empty string and Setting's methods to extract specific type of Value
+// like Int(), String(), IntSlice() etc. will return errors.
+func (c *Config) Get(key string) (s Setting) {
+	s.Value, s.found = c.Settings[key]
+	return
+}
+
+// Find returns a Setting. It is similar to Get method, but it return an error
+// if key was not found. In this case Setting's Value field will be empty string
+// and Setting's methods to extract value like Int(), String() etc. will return errors.
+func (c *Config) Find(key string) (s Setting, err error) {
+	s.Value, s.found = c.Settings[key]
+	if !s.found {
+		err = ErrNotFound
+	}
+	return
+}
+
+// GetDefault looks up for requested key and Setting with its value.
+// If lookup fails it returns Setting with Value field set to def.
+// Extraction methods
+func (c *Config) GetDefault(key, def string) (s Setting) {
+	s.Value, s.found = c.Settings[key]
+	if !s.found {
+		s.Value = def
+		s.found = true
+	}
 	return
 }
 
 // HasSetting returns true if line:
 // 	"key = somevalue"
 // was found in the parsed data
-func (c *Config) HasSetting(key string) (exists bool) {
+func (c *Config) Has(key string) (exists bool) {
 	_, exists = c.Settings[key]
 	return
 }

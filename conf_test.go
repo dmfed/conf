@@ -15,25 +15,33 @@ bool1=1
 bool2=true
 editor = vim
 distance=13.42
+floats=0.5,2.37,6
+floatswithstring = 0.5, hello, 0.9
 no missedme
 color`)
 
 func TestPackage(t *testing.T) {
 	r := bytes.NewReader(testConf)
 	c := parseReader(r)
-	if v, _ := c.GetSetting("token").String(); v != "test" {
+	if _, err := c.Get("floatswithstring").Float64Slice(); err == nil {
+		t.Fail()
+	}
+	if _, err := c.Get("floats").Float64Slice(); err != nil {
+		t.Fail()
+	}
+	if v, _ := c.Get("token").String(); v != "test" {
 		fmt.Println("failed finding key value")
 		t.Fail()
 	}
-	if v, _ := c.GetSetting("editor").String(); v != "vim" {
+	if v, _ := c.Get("editor").String(); v != "vim" {
 		fmt.Println("failed finding key value")
 		t.Fail()
 	}
-	if v, _ := c.GetSetting("port").Int(); v != 10000 {
+	if v, _ := c.Get("port").Int(); v != 10000 {
 		fmt.Println("failed finding int")
 		t.Fail()
 	}
-	if v, _ := c.GetSetting("distance").Float64(); v != 13.42 {
+	if v, _ := c.Get("distance").Float64(); v != 13.42 {
 		fmt.Println("failed finding key value")
 		t.Fail()
 	}
@@ -41,38 +49,37 @@ func TestPackage(t *testing.T) {
 		fmt.Println("failed finding option")
 		t.Fail()
 	}
-	if v, _ := c.GetSetting("bool1").Bool(); v != true {
+	if v, _ := c.Get("bool1").Bool(); v != true {
 		fmt.Println("failed finding bool1 value")
 		t.Fail()
 	}
-	if v, _ := c.GetSetting("bool2").Bool(); v != true {
+	if v, _ := c.Get("bool2").Bool(); v != true {
 		fmt.Println("failed finding bool2 value")
 		t.Fail()
 	}
-	if v, _ := c.GetSetting("two").String(); v != "two words" {
+	if v, _ := c.Get("two").String(); v != "two words" {
 		fmt.Println("failed finding key value")
 		t.Fail()
 	}
-	if v, _ := c.GetSetting("commas").String(); v != "abc, def, ghi" {
+	if v, _ := c.Get("commas").String(); v != "abc, def, ghi" {
 		fmt.Println("failed finding key value")
 		t.Fail()
 	}
-	if v, _ := c.GetSetting("nonexistent").String(); v != "" {
+	if v, e := c.Get("nonexistent").String(); v != "" || e == nil {
 		fmt.Println("returned non-empty string for nonexistent key")
 		t.Fail()
 	}
-	if c.HasOption("removed") || c.HasSetting("removed") {
+	if c.HasOption("removed") || c.Has("removed") {
 		fmt.Println("commented out line shows up in config")
 		t.Fail()
 	}
-	v := c.GetSetting("commas")
-	splitted := v.Split()
+	splitted, _ := c.Get("commas").StringSlice()
 	if len(splitted) != 3 {
-		fmt.Println("could not split Option")
+		fmt.Println("could not split string")
 		t.Fail()
 	}
-	abc, _ := splitted[0].String()
-	ghi, _ := splitted[2].String()
+	abc := splitted[0]
+	ghi := splitted[2]
 	if abc != "abc" || ghi != "ghi" {
 		fmt.Println("Split() returned incorrect values")
 		t.Fail()

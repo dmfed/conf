@@ -7,109 +7,158 @@ import (
 )
 
 var (
-	// ErrNotFound is returned when trying to get empty value from Setting.
-	ErrNotFound = errors.New("key was not found")
-	// ErrParsingBool is returned when Setting.Bool() method is called and Setting.Value
-	// can not be interpreted as boolean.
-	ErrParsingBool = errors.New("value can not be interpreted as bool")
+	ErrNotFound        = errors.New("key not found")
+	ErrParsingBool     = errors.New("value can not be interpreted as bool")
+	ErrCouldNotConvert = errors.New("could not cast one or more values to required type")
 )
 
 var valuesSeparator = ","
 
-// Setting represents key-value pair read from config file
+var boolMap = map[string]bool{
+	// what evaluates to true
+	"true": true,
+	"yes":  true,
+	"on":   true,
+	"1":    true,
+	// what evaluates to false
+	"false": false,
+	"no":    false,
+	"off":   false,
+	"0":     false,
+}
+
+// Setting represents key-value pair read from config file.
+// It's Value field holds the value of key parsed from the configuration
 type Setting struct {
-	// Key holds the name of key parsed from the configuration
-	Key string
-	// Value holds the value of key parsed from the configuration
 	Value string
-	// Found is set to true if Key was found in the parsed config, false otherwise
-	Found bool
+	found bool
 }
 
 // Int converts Setting's Value to int if possible
 // If setting's key was not found in the config this method will
 // return ErrNotFound
-func (st Setting) Int() (int, error) {
-	switch st.Found {
+func (st Setting) Int() (n int, err error) {
+	switch st.found {
 	case true:
-		return strconv.Atoi(st.Value)
+		n, err = strconv.Atoi(st.Value)
 	default:
-		return 0, ErrNotFound
+		err = ErrNotFound
 	}
+	return
+}
+
+// IntSlice splits Setting's Value (separator is ",") and adds
+// each of resulting values to []int if possible.
+// If value can not be converted to int it will be dropped. Check
+// len to be sure that all required values were parsed
+// If Setting's key was not found in the config this method will
+// return ErrNotFound
+func (st Setting) IntSlice() (slice []int, err error) {
+	switch st.found {
+	case true:
+		digits := tidySplit(st.Value, valuesSeparator)
+		for _, d := range digits {
+			if n, e := strconv.Atoi(d); e == nil {
+				slice = append(slice, n)
+			} else {
+				err = ErrCouldNotConvert
+			}
+		}
+	default:
+		err = ErrNotFound
+	}
+	return
 }
 
 // Float64 converts Setting's Value to float64 if possible
 // If setting's key was not found in the config this method will
 // return ErrNotFound
-func (st Setting) Float64() (float64, error) {
-	switch st.Found {
+func (st Setting) Float64() (n float64, err error) {
+	switch st.found {
 	case true:
-		return strconv.ParseFloat(st.Value, 64)
+		n, err = strconv.ParseFloat(st.Value, 64)
 	default:
-		return 0, ErrNotFound
+		err = ErrNotFound
 	}
+	return
+}
+
+// IntSlice splits Setting's Value (separator is ",") and adds
+// each of resulting values to []float64 if possible.
+// If value can not be converted to float64 it will be dropped. Check
+// len to be sure that all required values were parsed
+// If Setting's key was not found in the config this method will
+// return ErrNotFound
+func (st Setting) Float64Slice() (slice []float64, err error) {
+	switch st.found {
+	case true:
+		digits := tidySplit(st.Value, valuesSeparator)
+		for _, d := range digits {
+			if n, e := strconv.ParseFloat(d, 64); e == nil {
+				slice = append(slice, n)
+			} else {
+				err = ErrCouldNotConvert
+			}
+		}
+	default:
+		err = ErrNotFound
+	}
+	return
 }
 
 // String returns option Value as string
-func (st Setting) String() (string, error) {
-	switch st.Found {
+func (st Setting) String() (s string, err error) {
+	switch st.found {
 	case true:
-		return st.Value, nil
+		s, err = st.Value, nil
 	default:
-		return "", ErrNotFound
+		err = ErrNotFound
 	}
+	return
+}
+
+// StringSlice splits Setting's Value (separator is ",") and adds
+// each of resulting values to []string trimming leading and trailing spaces
+// from each string.
+func (st Setting) StringSlice() (slice []string, err error) {
+	switch st.found {
+	case true:
+		slice, err = tidySplit(st.Value, valuesSeparator), nil
+	default:
+		err = ErrNotFound
+	}
+	return
 }
 
 // Bool tries to interpret Setting's Value as bool
-// "1", "true", "yes" (case insensitive) yields true
-// "0", "false", "no" (case insensitive) yields false
-func (st Setting) Bool() (bool, error) {
-	switch st.Found {
+// "1", "true", "on", "yes" (case insensitive) yields true
+// "0", "false", "off", "no" (case insensitive) yields false
+func (st Setting) Bool() (value bool, err error) {
+	switch st.found {
 	case true:
-		return parseBool(st.Value)
+		value, err = parseBool(st.Value)
 	default:
-		return false, ErrNotFound
+		err = ErrNotFound
 	}
-}
-
-// Split splits Setting's value with separator sep and returns
-// []Setting. If separator was not found the method returns slice
-// with only one Setting. This method is intended for use when
-// config file has comma separated values like:
-//    myoption = first,second,third
-// Split(",") will return slice with 3 separate Setting each holding
-// one of "first, second, third" in their Value fields.
-func (st Setting) Split() []Setting {
-	settings := []Setting{}
-	if !st.Found {
-		return settings
-	}
-	for _, val := range strings.Split(st.Value, valuesSeparator) {
-		val = strings.Trim(val, " ")
-		settings = append(settings, Setting{Key: st.Key, Value: val, Found: true})
-	}
-	return settings
+	return
 }
 
 func parseBool(s string) (value bool, err error) {
-	switch strings.ToLower(s) {
-	// cases to return true
-	case "1":
-		fallthrough
-	case "yes":
-		fallthrough
-	case "true":
-		value = true
-	// cases to return false
-	case "0":
-		fallthrough
-	case "no":
-		fallthrough
-	case "false":
-		value = false
-	// if nothing matches we'll return error
+	s = strings.ToLower(s)
+	value, ok := boolMap[s]
+	switch ok {
+	case true:
+		err = nil
 	default:
 		err = ErrParsingBool
 	}
 	return
+}
+
+func tidySplit(s, sep string) []string {
+	splitted := strings.Split(s, sep)
+	for i, str := range splitted {
+		splitted[i] = strings.Trim(str, " ")
+	}
+	return splitted
 }

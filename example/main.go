@@ -35,8 +35,8 @@ func main() {
 	// 		Value 	string	// value if found
 	// 		Found 	bool 	// true if requested key-value pair was found else false
 	// }
-	port := config.GetSetting("port")
-	fmt.Printf("variable port has type: %T\nport.Key == %v, port.Value == %v, port.Found == %v\n", port, port.Key, port.Value, port.Found)
+	port := config.Get("port")
+	fmt.Printf("variable port has type: %T, port.Value == %v\n", port, port.Value)
 
 	// We can cast Setting.Value to a desired type including int, float64,
 	// bool and string. If requested Setting was not found trying to extract
@@ -51,11 +51,10 @@ func main() {
 	// and retuns slice of []Setting. It will be empty if requested key
 	// was not found and will have only one element if values were not actually
 	// comma separated. Note that Split() never returns nil.
-	servers := config.GetSetting("servers").Split()
+	servers, _ := config.Get("servers").StringSlice()
 	fmt.Println("Found servers:")
 	for i, s := range servers {
-		ip, _ := s.String()
-		fmt.Println(i+1, "\t", ip)
+		fmt.Println(i+1, "\t", s)
 	}
 
 	if config.HasOption("color") {
@@ -63,19 +62,19 @@ func main() {
 		// do something useful
 	}
 
-	distance, _ := config.GetSetting("distance").Float64()
+	distance, _ := config.Get("distance").Float64()
 	fmt.Printf("distance has value: %v, type: %T\n\n", distance, distance)
 
 	var t, f bool
-	t, _ = config.GetSetting("booltrue").Bool()
+	t, _ = config.Get("booltrue").Bool()
 
 	// We can also check if key-value pair exists prior to
 	// actually trying to get it.
-	if config.HasSetting("bool0") {
-		f, _ = config.GetSetting("bool0").Bool()
+	if config.Has("bool0") {
+		f, _ = config.Get("bool0").Bool()
 	}
 	fmt.Printf("t's type is: %T, value: %v, f's type is: %T, value: %v\n\n", t, t, f, f)
 
-	_, err := config.GetSetting("commented").String()
+	_, err := config.Get("commented").String()
 	fmt.Printf("Commented out string \"# commented\" does not appear in Config.\nTrying to extract value will return error: %v", err)
 }
