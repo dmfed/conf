@@ -6,18 +6,16 @@ import (
 	"testing"
 )
 
-var testConf = []byte(`network
-server=10.0.0.10
-port=10000
+var testConf = []byte(`port=10000
 # removed
-two = two words 100
+two = two words
 commas = abc, def, ghi
 token=test
 bool1=1
 bool2=true
 editor = vim
 distance=13.42
-no equal
+no missedme
 color`)
 
 func TestPackage(t *testing.T) {
@@ -44,14 +42,14 @@ func TestPackage(t *testing.T) {
 		t.Fail()
 	}
 	if v, _ := c.GetSetting("bool1").Bool(); v != true {
-		fmt.Println("failed finding key value")
+		fmt.Println("failed finding bool1 value")
 		t.Fail()
 	}
 	if v, _ := c.GetSetting("bool2").Bool(); v != true {
-		fmt.Println("failed finding key value")
+		fmt.Println("failed finding bool2 value")
 		t.Fail()
 	}
-	if v, _ := c.GetSetting("two").String(); v != "two words 100" {
+	if v, _ := c.GetSetting("two").String(); v != "two words" {
 		fmt.Println("failed finding key value")
 		t.Fail()
 	}
@@ -68,7 +66,7 @@ func TestPackage(t *testing.T) {
 		t.Fail()
 	}
 	v := c.GetSetting("commas")
-	splitted := v.Split(",")
+	splitted := v.Split()
 	if len(splitted) != 3 {
 		fmt.Println("could not split Option")
 		t.Fail()
@@ -80,6 +78,11 @@ func TestPackage(t *testing.T) {
 		t.Fail()
 	}
 	if c.HasOption("no") != true {
+		fmt.Println("should capture one option per line even if line holds two")
+		t.Fail()
+	}
+	if c.HasOption("missedme") == true {
+		fmt.Println("should only capture one option per line")
 		t.Fail()
 	}
 }

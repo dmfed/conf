@@ -14,7 +14,9 @@ var (
 	ErrParsingBool = errors.New("value can not be interpreted as bool")
 )
 
-// Option represents single valuse read from config
+var valuesSeparator = ","
+
+// Setting represents key-value pair read from config file
 type Setting struct {
 	// Key holds the name of key parsed from the configuration
 	Key string
@@ -24,8 +26,8 @@ type Setting struct {
 	Found bool
 }
 
-// Int converts Option's Value to int if possible
-// If option was not found in the config this method will
+// Int converts Setting's Value to int if possible
+// If setting's key was not found in the config this method will
 // return ErrNotFound
 func (st Setting) Int() (int, error) {
 	switch st.Found {
@@ -36,8 +38,8 @@ func (st Setting) Int() (int, error) {
 	}
 }
 
-// Float64 converts Option's Value to float64 if possible
-// If setting was not found in the config this method will
+// Float64 converts Setting's Value to float64 if possible
+// If setting's key was not found in the config this method will
 // return ErrNotFound
 func (st Setting) Float64() (float64, error) {
 	switch st.Found {
@@ -58,7 +60,7 @@ func (st Setting) String() (string, error) {
 	}
 }
 
-// Bool tries to interpret option Value as bool
+// Bool tries to interpret Setting's Value as bool
 // "1", "true", "yes" (case insensitive) yields true
 // "0", "false", "no" (case insensitive) yields false
 func (st Setting) Bool() (bool, error) {
@@ -73,37 +75,39 @@ func (st Setting) Bool() (bool, error) {
 // Split splits Setting's value with separator sep and returns
 // []Setting. If separator was not found the method returns slice
 // with only one Setting. This method is intended for use when
-// config file has comma (or any other delimiter) separated values
-// like:
+// config file has comma separated values like:
 //    myoption = first,second,third
 // Split(",") will return slice with 3 separate Setting each holding
-// one of "first, second, third"
-func (st Setting) Split(sep string) []Setting {
-	options := []Setting{}
+// one of "first, second, third" in their Value fields.
+func (st Setting) Split() []Setting {
+	settings := []Setting{}
 	if !st.Found {
-		return options
+		return settings
 	}
-	for _, val := range strings.Split(st.Value, sep) {
+	for _, val := range strings.Split(st.Value, valuesSeparator) {
 		val = strings.Trim(val, " ")
-		options = append(options, Setting{Value: val, Found: true})
+		settings = append(settings, Setting{Key: st.Key, Value: val, Found: true})
 	}
-	return options
+	return settings
 }
 
 func parseBool(s string) (value bool, err error) {
 	switch strings.ToLower(s) {
+	// cases to return true
 	case "1":
 		fallthrough
 	case "yes":
 		fallthrough
 	case "true":
 		value = true
+	// cases to return false
 	case "0":
 		fallthrough
 	case "no":
 		fallthrough
 	case "false":
 		value = false
+	// if nothing matches we'll return error
 	default:
 		err = ErrParsingBool
 	}
