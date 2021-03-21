@@ -34,9 +34,6 @@
 // See description of module's types and methods which are
 // quite self-explanatory.
 //
-// See also github.com/dmfed/conf/example/main.go for a working example
-// of program parsing config.
-//
 package conf
 
 // Config holds parsed keys and values. Settings and Options can be
