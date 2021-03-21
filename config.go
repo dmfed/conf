@@ -5,31 +5,29 @@
 // Module conf implements a very simple config parser with two types of
 // values: key value pairs and single word options. Each of these must be
 // put on separate line in a file like this:
-//   key1 = value
-//   key2 = value1, value2, value3
-//   option1
-//	 option2
-//
+//	key1 = value
+//	key2 = value1, value2, value3
+//	option1
+//	option2
 // Values can also be read from any io.Reader or io.ReadCloser
 //
 // Typical use case would look like this:
 //
-// config, err := conf.ParseFile("filename")
-// if err != nil {
+//	config, err := conf.ParseFile("filename")
+//	if err != nil {
 //		// Means we failed to read from file
-// 		// config variable is now nil and unusable
-// }
-
-// value, err := config.GetSetting("mykey").Float64()
-// if err != nil {
-// 		// Means that value has not been found
+//		// config variable is now nil and unusable
+//	}
+//	value, err := config.GetSetting("mykey").Float64()
+//	if err != nil {
+//		// Means that value has not been found
 //		// or can not be cast to desired type
-// }
-// value now holds float64.
+//	}
+//	// value now holds float64.
 //
-// value2, _ := config.GetSetting("otherkey").String()
+//	value2, _ := config.GetSetting("otherkey").String()
+//	// value2 now holds string if "otherkey" was parsed, else an empty string.
 //
-// value2 now holds string if "otherkey" was parsed, else an empty string.
 // Trying to extract non existing value will always return default value for
 // the type.
 //
@@ -68,7 +66,7 @@ func (c *Config) HasSetting(key string) (exists bool) {
 }
 
 // HasOption returns true if line:
-// 	"key"
+//	"key"
 // was found in the parsed file
 func (c *Config) HasOption(option string) (exists bool) {
 	_, exists = c.Options[option]
