@@ -13,6 +13,7 @@ commas = abc, def, ghi
 token=test
 bool1=1
 bool2=true
+
 editor = vim
 distance=13.42
 floats=0.5,2.37,6
