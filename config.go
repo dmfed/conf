@@ -7,31 +7,42 @@
 // put on separate line in a file like this:
 //	key1 = value
 //	key2 = value1, value2, value3
+//	key3=v1,v2,v3
 //	option1
 //	option2
-// Values can also be read from any io.Reader or io.ReadCloser
-//
+// Values can also be read from any io.Reader or io.ReadCloser. Note that
+// values in key value pairs mey either be separated with spaces or not.
 // Typical use case would look like this:
-//
 //	config, err := conf.ParseFile("filename")
 //	if err != nil {
 //		// Means we failed to read from file
 //		// config variable is now nil and unusable
 //	}
-//	value, err := config.GetSetting("mykey").Float64()
+//	value, err := config.Find("mykey")
 //	if err != nil {
-//		// Means that value has not been found
-//		// or can not be cast to desired type
+//		// Means that key has not been found
 //	}
-//	// value now holds float64.
-//
-//	value2, _ := config.GetSetting("otherkey").String()
-//	// value2 now holds string if "otherkey" was parsed, else an empty string.
-//
-// Trying to extract non existing value will always return default value for
-// the type.
-//
-// See description of module's types and methods which are
+//	// value now holds conf.Setting.
+//	n, err := value.Float64() // tries to parse float from Setting.Value field.
+//	//if err is nil then n holds float64.
+// There is also a quicker Get() method which returns no errors
+// ("i'm feeling lucky" way to lookup values). If it does not find
+// requested key, the returned Setting has empty string in Value field.
+//	value2 := config.Get("otherkey")
+// 	mybool, err := value2.Bool() // tries to interpret Setting.Value field as bool
+//	// mybool now holds boolean if "otherkey" was found and error returned
+//	// by Bool() method is nil.
+// Even shorter syntax would be:
+// 	listnumbers, err := config.Get("numbers").IntSlice()
+//	// Note that we'd still like to check for errors even if
+//	// we're sure the key exists to make sure all values are converted.
+//	// listnumbers holds slice of ints. If err is nil all of found values
+//	// have been converted successfully.
+// To check whether single-word options were found use:
+//	if config.HasOption("wordoption") {
+//		// do something
+//	}
+// See description of module's other methods which are
 // quite self-explanatory.
 //
 package conf
@@ -46,42 +57,35 @@ type Config struct {
 	Options map[string]struct{}
 }
 
-// Get returns a Setting. If key was not found the returned Setting's Value
-// will be empty string and Setting's methods to extract specific type of Value
-// like Int(), String(), IntSlice() etc. will return errors.
-func (c *Config) Get(key string) (s Setting) {
-	s.Value, s.found = c.Settings[key]
-	return
-}
-
-// Find returns a Setting. It is similar to Get method, but it return an error
-// if key was not found. In this case Setting's Value field will be empty string
-// and Setting's methods to extract value like Int(), String() etc. will return errors.
+// Find looks up a Setting and returns it. If returned error is not nil
+// the requested key was not found and returned Setting has empty string in Value
+// field.
 func (c *Config) Find(key string) (s Setting, err error) {
-	s.Value, s.found = c.Settings[key]
-	if !s.found {
+	v, ok := c.Settings[key]
+	if !ok {
 		err = ErrNotFound
 	}
+	s.Value = v
 	return
 }
 
-// GetDefault looks up for requested key and Setting with its value.
+// Get returns a Setting. If key was not found the returned Setting Value
+// will be empty string.
+func (c *Config) Get(key string) (s Setting) {
+	s.Value = c.Settings[key]
+	return
+}
+
+// GetDefault looks up a Setting with requested key.
 // If lookup fails it returns Setting with Value field set to def.
-// Extraction methods
 func (c *Config) GetDefault(key, def string) (s Setting) {
-	s.Value, s.found = c.Settings[key]
-	if !s.found {
+	v, ok := c.Settings[key]
+	switch ok {
+	case true:
+		s.Value = v
+	default:
 		s.Value = def
-		s.found = true
 	}
-	return
-}
-
-// HasSetting returns true if line:
-// 	"key = somevalue"
-// was found in the parsed data
-func (c *Config) Has(key string) (exists bool) {
-	_, exists = c.Settings[key]
 	return
 }
 

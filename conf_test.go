@@ -30,11 +30,11 @@ func TestPackage(t *testing.T) {
 	if _, err := c.Get("floats").Float64Slice(); err != nil {
 		t.Fail()
 	}
-	if v, _ := c.Get("token").String(); v != "test" {
+	if v := c.Get("token").String(); v != "test" {
 		fmt.Println("failed finding key value")
 		t.Fail()
 	}
-	if v, _ := c.Get("editor").String(); v != "vim" {
+	if v := c.Get("editor").String(); v != "vim" {
 		fmt.Println("failed finding key value")
 		t.Fail()
 	}
@@ -58,23 +58,23 @@ func TestPackage(t *testing.T) {
 		fmt.Println("failed finding bool2 value")
 		t.Fail()
 	}
-	if v, _ := c.Get("two").String(); v != "two words" {
+	if v := c.Get("two").String(); v != "two words" {
 		fmt.Println("failed finding key value")
 		t.Fail()
 	}
-	if v, _ := c.Get("commas").String(); v != "abc, def, ghi" {
+	if v := c.Get("commas").String(); v != "abc, def, ghi" {
 		fmt.Println("failed finding key value")
 		t.Fail()
 	}
-	if v, e := c.Get("nonexistent").String(); v != "" || e == nil {
+	if v := c.Get("nonexistent").String(); v != "" {
 		fmt.Println("returned non-empty string for nonexistent key")
 		t.Fail()
 	}
-	if c.HasOption("removed") || c.Has("removed") {
+	if c.HasOption("removed") {
 		fmt.Println("commented out line shows up in config")
 		t.Fail()
 	}
-	splitted, _ := c.Get("commas").StringSlice()
+	splitted := c.Get("commas").StringSlice()
 	if len(splitted) != 3 {
 		fmt.Println("could not split string")
 		t.Fail()
@@ -91,6 +91,15 @@ func TestPackage(t *testing.T) {
 	}
 	if c.HasOption("missedme") == true {
 		fmt.Println("should only capture one option per line")
+		t.Fail()
+	}
+	st := Setting{}
+	if v, err := st.Float64(); v != 0.0 || err == nil {
+		fmt.Println("empty string erroneously converts to float")
+		t.Fail()
+	}
+	if def := c.GetDefault("non-existant-key", "myvalue"); def.Value != "myvalue" {
+		fmt.Println("GetDefault fails to apply default value")
 		t.Fail()
 	}
 }

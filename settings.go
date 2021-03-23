@@ -31,114 +31,94 @@ var boolMap = map[string]bool{
 // It's Value field holds the value of key parsed from the configuration
 type Setting struct {
 	Value string
-	found bool
 }
 
-// Int converts Setting's Value to int if possible
-// If setting's key was not found in the config this method will
-// return ErrNotFound
-func (st Setting) Int() (n int, err error) {
-	switch st.found {
-	case true:
-		n, err = strconv.Atoi(st.Value)
-	default:
-		err = ErrNotFound
-	}
-	return
+// Int converts Setting Value to int. Returned error
+// will be non nil if convesion failed.
+func (st Setting) Int() (int, error) {
+	return parseInt(st.Value)
 }
 
-// IntSlice splits Setting's Value (separator is ",") and adds
+// IntSlice splits Setting Value (separator is ",") and adds
 // each of resulting values to []int if possible.
-// If value can not be converted to int it will be dropped. Check
-// len to be sure that all required values were parsed
-// If Setting's key was not found in the config this method will
-// return ErrNotFound
-func (st Setting) IntSlice() (slice []int, err error) {
-	switch st.found {
-	case true:
-		digits := tidySplit(st.Value, valuesSeparator)
-		for _, d := range digits {
-			if n, e := strconv.Atoi(d); e == nil {
-				slice = append(slice, n)
-			} else {
-				err = ErrCouldNotConvert
-			}
-		}
-	default:
-		err = ErrNotFound
-	}
-	return
+// If one or more values can not be converted to float64 those will be dropped
+// and method will return conf.ErrCouldNotConvert.
+// Check error to be sure that all required values were parsed.
+func (st Setting) IntSlice() ([]int, error) {
+	return parseIntSlice(st.Value, valuesSeparator)
 }
 
-// Float64 converts Setting's Value to float64 if possible
-// If setting's key was not found in the config this method will
-// return ErrNotFound
-func (st Setting) Float64() (n float64, err error) {
-	switch st.found {
-	case true:
-		n, err = strconv.ParseFloat(st.Value, 64)
-	default:
-		err = ErrNotFound
-	}
-	return
+/* func (st Setting) split(sep string) Setting {
+	st.sep = sep //Choose separator to split values ?
+	return st
+} */
+
+// Float64 converts Setting Value to float64. Returned error
+// will be non nil if convesion failed.
+func (st Setting) Float64() (float64, error) {
+	return parseFloat64(st.Value)
 }
 
-// IntSlice splits Setting's Value (separator is ",") and adds
+// Float64Slice splits Setting Value (separator is ",") and adds
 // each of resulting values to []float64 if possible.
-// If value can not be converted to float64 it will be dropped. Check
-// len to be sure that all required values were parsed
-// If Setting's key was not found in the config this method will
-// return ErrNotFound
-func (st Setting) Float64Slice() (slice []float64, err error) {
-	switch st.found {
-	case true:
-		digits := tidySplit(st.Value, valuesSeparator)
-		for _, d := range digits {
-			if n, e := strconv.ParseFloat(d, 64); e == nil {
-				slice = append(slice, n)
-			} else {
-				err = ErrCouldNotConvert
-			}
-		}
-	default:
-		err = ErrNotFound
-	}
-	return
+// If one or more values can not be converted to float64 those will be dropped
+// and method will return conf.ErrCouldNotConvert.
+// Check error to be sure that all required values were parsed.
+func (st Setting) Float64Slice() ([]float64, error) {
+	return parseFloat64Slice(st.Value, valuesSeparator)
 }
 
 // String returns option Value as string
-func (st Setting) String() (s string, err error) {
-	switch st.found {
-	case true:
-		s, err = st.Value, nil
-	default:
-		err = ErrNotFound
-	}
-	return
+// This method also implements Stringer interface from fmt module
+func (st Setting) String() string {
+	return st.Value
 }
 
 // StringSlice splits Setting's Value (separator is ",") and adds
 // each of resulting values to []string trimming leading and trailing spaces
 // from each string.
-func (st Setting) StringSlice() (slice []string, err error) {
-	switch st.found {
-	case true:
-		slice, err = tidySplit(st.Value, valuesSeparator), nil
-	default:
-		err = ErrNotFound
-	}
-	return
+func (st Setting) StringSlice() []string {
+	return tidySplit(st.Value, valuesSeparator)
 }
 
 // Bool tries to interpret Setting's Value as bool
 // "1", "true", "on", "yes" (case insensitive) yields true
 // "0", "false", "off", "no" (case insensitive) yields false
-func (st Setting) Bool() (value bool, err error) {
-	switch st.found {
-	case true:
-		value, err = parseBool(st.Value)
-	default:
-		err = ErrNotFound
+// If nothing matches will return false and conf.ErrParsingBool
+func (st Setting) Bool() (bool, error) {
+	return parseBool(st.Value)
+}
+
+func parseInt(s string) (n int, err error) {
+	n, err = strconv.Atoi(s)
+	return
+}
+
+func parseIntSlice(s, sep string) (slice []int, err error) {
+	digits := tidySplit(s, sep)
+	for _, d := range digits {
+		if n, e := strconv.Atoi(d); e == nil {
+			slice = append(slice, n)
+		} else {
+			err = ErrCouldNotConvert
+		}
+	}
+	return
+}
+
+func parseFloat64(s string) (n float64, err error) {
+	n, err = strconv.ParseFloat(s, 64)
+	return
+}
+
+func parseFloat64Slice(s, sep string) (slice []float64, err error) {
+	digits := tidySplit(s, sep)
+	for _, d := range digits {
+		if n, e := strconv.ParseFloat(d, 64); e == nil {
+			slice = append(slice, n)
+		} else {
+			err = ErrCouldNotConvert
+		}
 	}
 	return
 }
