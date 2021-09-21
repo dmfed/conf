@@ -96,12 +96,16 @@ func parseInt(s string) (n int, err error) {
 
 func parseIntSlice(s, sep string) (slice []int, err error) {
 	digits := tidySplit(s, sep)
+	ok := true
 	for _, d := range digits {
 		if n, e := strconv.Atoi(d); e == nil {
 			slice = append(slice, n)
 		} else {
-			err = ErrCouldNotConvert
+			ok = false
 		}
+	}
+	if !ok {
+		err = ErrCouldNotConvert
 	}
 	return
 }
@@ -113,12 +117,16 @@ func parseFloat64(s string) (n float64, err error) {
 
 func parseFloat64Slice(s, sep string) (slice []float64, err error) {
 	digits := tidySplit(s, sep)
+	ok := true
 	for _, d := range digits {
 		if n, e := strconv.ParseFloat(d, 64); e == nil {
 			slice = append(slice, n)
 		} else {
-			err = ErrCouldNotConvert
+			ok = false
 		}
+	}
+	if !ok {
+		err = ErrCouldNotConvert
 	}
 	return
 }
@@ -126,10 +134,7 @@ func parseFloat64Slice(s, sep string) (slice []float64, err error) {
 func parseBool(s string) (value bool, err error) {
 	s = strings.ToLower(s)
 	value, ok := boolMap[s]
-	switch ok {
-	case true:
-		err = nil
-	default:
+	if !ok {
 		err = ErrParsingBool
 	}
 	return
