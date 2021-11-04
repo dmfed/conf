@@ -17,14 +17,16 @@ var valuesSeparator = ","
 var boolMap = map[string]bool{
 	// what evaluates to true
 	"true": true,
+	"t":    true,
+	"1":    true,
 	"yes":  true,
 	"on":   true,
-	"1":    true,
 	// what evaluates to false
 	"false": false,
+	"f":     false,
+	"0":     false,
 	"no":    false,
 	"off":   false,
-	"0":     false,
 }
 
 // Setting represents key-value pair read from config file.
@@ -94,20 +96,23 @@ func parseInt(s string) (n int, err error) {
 	return
 }
 
-func parseIntSlice(s, sep string) (slice []int, err error) {
-	digits := tidySplit(s, sep)
-	ok := true
+func parseIntSlice(s, sep string) ([]int, error) {
+	var (
+		n      int
+		err    error
+		slice  []int
+		digits []string
+	)
+	digits = tidySplit(s, sep)
 	for _, d := range digits {
-		if n, e := strconv.Atoi(d); e == nil {
-			slice = append(slice, n)
-		} else {
-			ok = false
+		n, err = strconv.Atoi(d)
+		if err != nil {
+			err = ErrCouldNotConvert
+			break
 		}
+		slice = append(slice, n)
 	}
-	if !ok {
-		err = ErrCouldNotConvert
-	}
-	return
+	return slice, err
 }
 
 func parseFloat64(s string) (n float64, err error) {
@@ -115,20 +120,23 @@ func parseFloat64(s string) (n float64, err error) {
 	return
 }
 
-func parseFloat64Slice(s, sep string) (slice []float64, err error) {
-	digits := tidySplit(s, sep)
-	ok := true
+func parseFloat64Slice(s, sep string) ([]float64, error) {
+	var (
+		n      float64
+		err    error
+		slice  []float64
+		digits []string
+	)
+	digits = tidySplit(s, sep)
 	for _, d := range digits {
-		if n, e := strconv.ParseFloat(d, 64); e == nil {
-			slice = append(slice, n)
-		} else {
-			ok = false
+		n, err = strconv.ParseFloat(d, 64)
+		if err != nil {
+			err = ErrCouldNotConvert
+			break
 		}
+		slice = append(slice, n)
 	}
-	if !ok {
-		err = ErrCouldNotConvert
-	}
-	return
+	return slice, err
 }
 
 func parseBool(s string) (value bool, err error) {
